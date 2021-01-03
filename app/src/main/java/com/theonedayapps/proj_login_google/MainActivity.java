@@ -4,7 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+
 import android.util.Log;
 import android.view.View;
 
@@ -16,15 +18,31 @@ import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Locale;
+
+import javax.net.ssl.HttpsURLConnection;
+
 
 public class MainActivity extends AppCompatActivity {
 private SignInButton signInButton;
 private GoogleSignInClient mGoogleSignInClient;
 private GoogleSignInAccount account;
 private static int RC_SIGN_IN=100;
+  public static String personEmail;
+   public static String currentTime;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +62,9 @@ private static int RC_SIGN_IN=100;
                  signIn();
              }
          });
+
+//
+        //
     }
 
     private void signIn() {
@@ -72,16 +93,12 @@ private static int RC_SIGN_IN=100;
             // Signed in successfully, show authenticated UI.
             GoogleSignInAccount acct = GoogleSignIn.getLastSignedInAccount(this);
             if (acct != null) {
-                String personName = acct.getDisplayName();
-                String personGivenName = acct.getGivenName();
-                String personFamilyName = acct.getFamilyName();
-                String personId = acct.getId();
-                Uri personPhoto = acct.getPhotoUrl();
 
-                String personEmail = acct.getEmail();
+                 personEmail = acct.getEmail();
 
-                String currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-
+                currentTime = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                new SendRequest().execute();
+               // completeQuestionnaireCall.enqueue(callCallback);
             }
         startActivity(new Intent(MainActivity.this,Activity2.class));
         } catch (ApiException e) {
@@ -91,4 +108,105 @@ private static int RC_SIGN_IN=100;
         }
     }
 
+
+
+    public class SendRequest extends AsyncTask<String, Void, String> {
+
+
+        protected void onPreExecute(){}
+
+        protected String doInBackground(String... arg0) {
+
+            try{
+
+                URL url = new URL("https://script.google.com/macros/s/AKfycbyjFyiE_x69DxAV1M-vDvn9fOW1bkpduB0MBEEdwyddxwehGJbN/exec");
+
+                JSONObject postDataParams = new JSONObject();
+
+
+
+
+                postDataParams.put("email",personEmail);
+                postDataParams.put("location","123");
+                postDataParams.put("time",currentTime);
+
+
+
+                Log.e("params",postDataParams.toString());
+
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setReadTimeout(15000 /* milliseconds */);
+                conn.setConnectTimeout(15000 /* milliseconds */);
+                conn.setRequestMethod("POST");
+                conn.setDoInput(true);
+                conn.setDoOutput(true);
+
+                OutputStream os = conn.getOutputStream();
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(os, "UTF-8"));
+                writer.write(getPostDataString(postDataParams));
+
+                writer.flush();
+                writer.close();
+                os.close();
+
+                int responseCode=conn.getResponseCode();
+
+                if (responseCode == HttpsURLConnection.HTTP_OK) {
+
+                    BufferedReader in=new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuffer sb = new StringBuffer("");
+                    String line="";
+
+                    while((line = in.readLine()) != null) {
+
+                        sb.append(line);
+                        break;
+                    }
+
+                    in.close();
+                    return sb.toString();
+
+                }
+                else {
+                    return new String("false : "+responseCode);
+                }
+            }
+            catch(Exception e){
+                return new String("Exception: " + e.getMessage());
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Log.d("message1","#######################done");
+
+        }
+    }
+
+    public String getPostDataString(JSONObject params) throws Exception {
+
+        StringBuilder result = new StringBuilder();
+        boolean first = true;
+
+        Iterator<String> itr = params.keys();
+
+        while(itr.hasNext()){
+
+            String key= itr.next();
+            Object value = params.get(key);
+
+            if (first)
+                first = false;
+            else
+                result.append("&");
+
+            result.append(URLEncoder.encode(key, "UTF-8"));
+            result.append("=");
+            result.append(URLEncoder.encode(value.toString(), "UTF-8"));
+
+        }
+        return result.toString();
+    }
 }
+
