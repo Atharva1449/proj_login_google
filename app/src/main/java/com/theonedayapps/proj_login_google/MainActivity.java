@@ -18,6 +18,7 @@ import android.os.Bundle;
 
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -46,12 +47,12 @@ import javax.net.ssl.HttpsURLConnection;
 
 
 public class MainActivity extends AppCompatActivity {
-private SignInButton signInButton;
-private GoogleSignInClient mGoogleSignInClient;
-private GoogleSignInAccount account;
-private static int RC_SIGN_IN=100;
-  public static String personEmail;
-   public static String currentTime;
+    private SignInButton signInButton;
+    private GoogleSignInClient mGoogleSignInClient;
+    private GoogleSignInAccount account;
+    private static int RC_SIGN_IN = 100;
+    public static String personEmail;
+    public static String currentTime;
     public static String location1;
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -60,21 +61,23 @@ private static int RC_SIGN_IN=100;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+//to make transperant status and nav bar
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
-         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-         account = GoogleSignIn.getLastSignedInAccount(this);
+        account = GoogleSignIn.getLastSignedInAccount(this);
 
-         signInButton = findViewById(R.id.sign_in_button);
-         signInButton.setOnClickListener(new View.OnClickListener() {
-             @Override
-             public void onClick(View v) {
-                 signIn();
-             }
-         });
+        signInButton = findViewById(R.id.sign_in_button);
+        signInButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                signIn();
+            }
+        });
 
 //
         //////////////////////////////////
@@ -84,9 +87,10 @@ private static int RC_SIGN_IN=100;
             public void onLocationChanged(@NonNull Location location) {
 //                locationListener.onLocationChanged(location);
                 locationManager.removeUpdates(locationListener);
-                Log.d("location1", "##############"+location.getLatitude());
-                location1=location.getLatitude()+" "+location.getLongitude();
+                Log.d("location1", "##############" + location.getLatitude());
+                location1 = location.getLatitude() + " " + location.getLongitude();
             }
+
             @Override
             public void onProviderEnabled(@NonNull String provider) {
 
@@ -104,7 +108,17 @@ private static int RC_SIGN_IN=100;
         };
 
 
-        if(Build.VERSION.SDK_INT < 23){
+        if (Build.VERSION.SDK_INT < 23) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         }else{
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
